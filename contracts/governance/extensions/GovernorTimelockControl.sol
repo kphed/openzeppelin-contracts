@@ -75,6 +75,32 @@ abstract contract GovernorTimelockControl is Governor {
     }
 
     /**
+     * @dev Overridden version of the {Governor-cancel} function that extends the allowed states to include `IGovernor.ProposalStates.Queued`.
+     */
+    function cancel(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) public virtual override returns (uint256) {
+        // The proposalId will be recomputed in the `_cancel` call further down. However we need the value before we
+        // do the internal call, because we need to check the proposal state BEFORE the internal `_cancel` call
+        // changes it. The `hashProposal` duplication has a cost that is limited, and that we accept.
+        uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
+
+        // public cancel restrictions (on top of existing _cancel restrictions).
+        _validateStateBitmap(
+            proposalId,
+            _encodeStateBitmap(ProposalState.Pending) | _encodeStateBitmap(ProposalState.Queued)
+        );
+        if (_msgSender() != proposalProposer(proposalId)) {
+            revert GovernorOnlyProposer(_msgSender());
+        }
+
+        return _cancel(targets, values, calldatas, descriptionHash);
+    }
+
+    /**
      * @dev Function to queue a proposal to the timelock.
      */
     function _queueOperations(

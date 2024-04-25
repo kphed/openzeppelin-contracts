@@ -34,6 +34,15 @@ abstract contract GovernorStorageMock is
         return super.proposalNeedsQueuing(proposalId);
     }
 
+    function cancel(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) public virtual override(Governor, GovernorTimelockControl) returns (uint256) {
+        return super.cancel(targets, values, calldatas, descriptionHash);
+    }
+
     function _propose(
         address[] memory targets,
         uint256[] memory values,
